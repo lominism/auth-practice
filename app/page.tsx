@@ -15,11 +15,11 @@ export default function Home() {
       <main className="flex min-h-screen w-full max-w-4xl flex-col items-center justify-center py-32 px-16 bg-white dark:bg-black">
         <div className="text-center mb-12">
           <Image
-            className="dark:invert mx-auto mb-8"
-            src="/next.svg"
-            alt="Next.js logo"
-            width={150}
-            height={30}
+            className="dark:invert mx-auto mb-2"
+            src="/gilamesh-logo.svg"
+            alt="Gilamesh logo"
+            width={300}
+            height={100}
             priority
           />
           <h1 className="text-4xl font-bold tracking-tight text-black dark:text-zinc-50 mb-4">
