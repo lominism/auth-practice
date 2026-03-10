@@ -3,6 +3,9 @@
 import { Home, Settings, User, LogOut, Shield } from "lucide-react";
 import Link from "next/link";
 
+// I created the logout hook in lib and will import it and then call it below
+import { useLogout } from "@/lib/logout";
+
 import {
   Sidebar,
   SidebarContent,
@@ -44,6 +47,8 @@ const authItems = [
 ];
 
 export function AppSidebar() {
+  const logout = useLogout();
+
   return (
     <Sidebar>
       <SidebarContent>
@@ -85,11 +90,10 @@ export function AppSidebar() {
       <SidebarFooter>
         <SidebarMenu>
           <SidebarMenuItem>
-            <SidebarMenuButton asChild>
-              <Link href="/auth/login">
-                <LogOut />
-                <span>Logout</span>
-              </Link>
+            {/* Instead of Link, fire logout action */}
+            <SidebarMenuButton onClick={logout}>
+              <LogOut />
+              <span>Logout</span>
             </SidebarMenuButton>
           </SidebarMenuItem>
         </SidebarMenu>

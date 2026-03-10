@@ -2,6 +2,9 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/lib/firebaseClient";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -15,22 +18,51 @@ import {
 } from "@/components/ui/card";
 
 export default function LoginPage() {
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Login form submitted:", formData);
-    // TODO: Implement authentication logic with NestJS backend
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      // 1) Sign in on Firebase (client)
+      await signInWithEmailAndPassword(auth, formData.email, formData.password);
+
+      // 2) Get a fresh ID token
+      const idToken = await auth.currentUser!.getIdToken(true);
+
+      // 3) Exchange ID token for a secure, HTTP-only session cookie from Nest
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}/auth/session`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include", // <-- required for cookies
+          body: JSON.stringify({ idToken }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data?.message || "Failed to create session");
+      }
+
+      // 4) Go to your protected area
+      router.replace("/main");
+    } catch (err: any) {
+      setError(err.message || "Login failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
+    setFormData((s) => ({ ...s, [e.target.name]: e.target.value }));
   };
 
   return (
@@ -41,6 +73,7 @@ export default function LoginPage() {
           Enter your email and password to access your account
         </CardDescription>
       </CardHeader>
+
       <form onSubmit={handleSubmit}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
@@ -55,6 +88,7 @@ export default function LoginPage() {
               required
             />
           </div>
+
           <div className="grid gap-2">
             <Label htmlFor="password">Password</Label>
             <Input
@@ -67,11 +101,15 @@ export default function LoginPage() {
               required
             />
           </div>
+
+          {error && <p className="text-sm text-red-600">{error}</p>}
         </CardContent>
+
         <CardFooter className="flex flex-col gap-4">
-          <Button type="submit" className="w-full">
-            Sign In
+          <Button type="submit" className="w-full" disabled={submitting}>
+            {submitting ? "Signing in..." : "Sign In"}
           </Button>
+
           <div className="text-center text-sm">
             Don&apos;t have an account?{" "}
             <Link
@@ -81,6 +119,7 @@ export default function LoginPage() {
               Sign up
             </Link>
           </div>
+
           <div className="text-center text-sm">
             <Link href="/" className="text-gray-600 hover:underline">
               Back to Home
